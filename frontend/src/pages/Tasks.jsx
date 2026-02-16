@@ -57,7 +57,7 @@ function TaskModal({ open, onClose, form, setForm, onSubmit, projects, users, ti
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{title}</h3>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors" aria-label="Cerrar modal">
             <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
           </button>
         </div>
@@ -550,6 +550,7 @@ export default function Tasks() {
                           type="button"
                           onClick={(e) => { e.stopPropagation(); openEditModal(task); }}
                           className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
+                          aria-label="Editar tarea"
                           title="Editar"
                         >
                           <Pencil className="w-4 h-4" />
@@ -558,6 +559,7 @@ export default function Tasks() {
                           type="button"
                           onClick={(e) => { e.stopPropagation(); deleteTask(id); }}
                           className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                          aria-label="Eliminar tarea"
                           title="Eliminar"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -604,6 +606,8 @@ export default function Tasks() {
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openEditModal(task); }}
                       className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                      aria-label="Editar tarea"
+                      title="Editar"
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
@@ -611,6 +615,8 @@ export default function Tasks() {
                       type="button"
                       onClick={(e) => { e.stopPropagation(); deleteTask(id); }}
                       className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))]"
+                      aria-label="Eliminar tarea"
+                      title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -643,7 +649,7 @@ export default function Tasks() {
                   placeholder="Escribe un comentario..."
                   className="input-field flex-1"
                 />
-                <button type="submit" className="btn-primary px-3">
+                <button type="submit" className="btn-primary px-3" aria-label="Enviar comentario">
                   <Send className="w-4 h-4" />
                 </button>
               </form>
