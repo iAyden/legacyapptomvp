@@ -9,9 +9,23 @@ connectDB();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,          // Vercel (prod)
+  "http://localhost:5173"           // Local dev
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    // Permite requests sin origin (Postman/curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
