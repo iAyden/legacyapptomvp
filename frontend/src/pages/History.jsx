@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { History as HistoryIcon, RefreshCw, List } from 'lucide-react';
+import TaskSearchInput from '../components/TaskSearchInput';
 
 export default function History() {
-  const [taskId, setTaskId] = useState('');
+  const [selectedTask, setSelectedTask] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [mode, setMode] = useState('task');
 
   const loadTaskHistory = async () => {
-    if (!taskId.trim()) { setError('ID de tarea requerido'); return; }
+    if (!selectedTask) { setError('Selecciona una tarea primero'); return; }
     setError('');
     setLoading(true);
     try {
-      const data = await api(`/api/history/task/${taskId.trim()}`);
+      const data = await api(`/api/history/task/${selectedTask._id || selectedTask.id}`);
       setEntries(Array.isArray(data) ? data : []);
       setMode('task');
     } catch (e) {
@@ -49,9 +50,9 @@ export default function History() {
 
       <div className="card p-5">
         <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">ID Tarea</label>
-            <input type="text" value={taskId} onChange={(e) => setTaskId(e.target.value)} className="input-field w-40" placeholder="ID" />
+          <div className="w-full max-w-sm">
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Tarea</label>
+            <TaskSearchInput onSelect={setSelectedTask} selectedTask={selectedTask} />
           </div>
           <button type="button" onClick={loadTaskHistory} disabled={loading} className="btn-primary">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -69,7 +70,7 @@ export default function History() {
         <div className="px-5 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
           <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
             <HistoryIcon className="w-4 h-4" />
-            {mode === 'all' ? 'Historial completo' : `Historial tarea #${taskId || '?'}`}
+            {mode === 'all' ? 'Historial completo' : `Historial: ${selectedTask?.title || 'Sin seleccionar'}`}
           </h3>
         </div>
         <div className="p-5">
