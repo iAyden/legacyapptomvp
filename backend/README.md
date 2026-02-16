@@ -2,14 +2,26 @@
 
 Node.js + Express + MongoDB (Mongoose). See `SETUP_COMPLETE.md` for full API and setup details.
 
+## Required environment variables
+
+| Variable       | Description |
+|----------------|-------------|
+| `MONGODB_URI`  | MongoDB connection string (e.g. Atlas). |
+| `JWT_SECRET`   | Secret for signing JWTs (use a long random string in production). |
+| `CORS_ORIGIN`  | Allowed origin for CORS (e.g. `https://your-frontend.vercel.app`). |
+
+Optional: `PORT` (default `4000`). The server uses `process.env.PORT` so it works on Render, Railway, etc.
+
 ## Quick start
 
 ```bash
 npm install
-cp .env.example .env   # edit MONGODB_URI, JWT_SECRET
+cp .env.example .env   # set MONGODB_URI, JWT_SECRET, CORS_ORIGIN
 npm run init-data      # optional: seed default users & projects
-npm run dev
+npm start
 ```
+
+For deployment (Atlas + Render/Railway + Vercel), see the root **DEPLOYMENT.md**.
 
 ## One-time migration from legacy localStorage
 
