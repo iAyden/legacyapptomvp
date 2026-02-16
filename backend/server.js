@@ -21,6 +21,12 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true });
 });
 
+const auth = require('./middleware/auth');
+const { tasksCsvHandler } = require('./routes/export');
+
+// GET /api/tasks.csv - same filters as GET /api/tasks, auth required
+app.get('/api/tasks.csv', auth, tasksCsvHandler);
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
