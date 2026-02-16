@@ -23,9 +23,14 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
-
-// Routes will be added here
-// TODO: Add routes for users, projects, tasks, comments, history, notifications, search, reports, export
+app.use('/api/users', require('./routes/users'));
+app.use('/api/projects', require('./routes/projects'));
+app.use('/api/tasks', require('./routes/tasks'));
+app.use('/api/comments', require('./routes/comments'));
+app.use('/api/history', require('./routes/history'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/export', require('./routes/export'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
