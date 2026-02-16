@@ -10,7 +10,7 @@ function ProjectModal({ open, onClose, form, setForm, onSubmit, title, submitLab
       <div className="w-full max-w-md card overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
           <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{title}</h3>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors" aria-label="Cerrar modal">
             <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
           </button>
         </div>
@@ -146,10 +146,10 @@ export default function Projects() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button type="button" onClick={() => openEdit(p)} className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors" title="Editar">
+                    <button type="button" onClick={() => openEdit(p)} className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors" aria-label="Editar proyecto" title="Editar">
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => deleteProject(id)} className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors" title="Eliminar">
+                    <button type="button" onClick={() => deleteProject(id)} className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors" aria-label="Eliminar proyecto" title="Eliminar">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
