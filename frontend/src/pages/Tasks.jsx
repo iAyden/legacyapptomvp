@@ -42,8 +42,56 @@ function PriorityBadge({ priority }) {
   return <span className={`badge ${map[priority] || 'badge-media'}`}>{priority || 'Media'}</span>;
 }
 
+const TITLE_MAX = 100;
+const DESCRIPTION_MAX = 500;
+const HOURS_MAX = 10000;
+
 function TaskModal({ open, onClose, form, setForm, onSubmit, projects, users, title, submitLabel, error }) {
   const overlayRef = useRef(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'title':
+        if (!value.trim()) return 'El titulo es requerido';
+        if (value.trim().length < 3) return 'Minimo 3 caracteres';
+        if (value.length > TITLE_MAX) return `Maximo ${TITLE_MAX} caracteres`;
+        return '';
+      case 'description':
+        if (value.length > DESCRIPTION_MAX) return `Maximo ${DESCRIPTION_MAX} caracteres`;
+        return '';
+      case 'estimatedHours':
+        if (value === '' || value === undefined) return '';
+        { const num = parseFloat(value);
+        if (isNaN(num)) return 'Debe ser un numero valido';
+        if (num < 0) return 'No se permiten valores negativos';
+        if (num > HOURS_MAX) return `Maximo ${HOURS_MAX} horas`;
+        return ''; }
+      default:
+        return '';
+    }
+  };
+
+  const handleChange = (name, value) => {
+    setForm((f) => ({ ...f, [name]: value }));
+    const err = validateField(name, value);
+    setFieldErrors((prev) => ({ ...prev, [name]: err }));
+  };
+
+  const validateAll = () => {
+    const errors = {};
+    errors.title = validateField('title', form.title);
+    errors.description = validateField('description', form.description);
+    errors.estimatedHours = validateField('estimatedHours', form.estimatedHours);
+    setFieldErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validateAll()) return;
+    onSubmit(e);
+  };
 
   if (!open) return null;
 
@@ -63,27 +111,37 @@ function TaskModal({ open, onClose, form, setForm, onSubmit, projects, users, ti
         </div>
 
         {/* Body */}
-        <form onSubmit={onSubmit} className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Titulo *</label>
             <input
               value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              className="input-field"
+              onChange={(e) => handleChange('title', e.target.value)}
+              className={`input-field ${fieldErrors.title ? 'border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive))]' : ''}`}
               placeholder="Nombre de la tarea"
+              maxLength={TITLE_MAX}
               required
             />
+            <div className="flex items-center justify-between mt-1">
+              {fieldErrors.title && <p className="text-xs text-[hsl(var(--destructive))]">{fieldErrors.title}</p>}
+              <p className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">{form.title.length}/{TITLE_MAX}</p>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Descripcion</label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => handleChange('description', e.target.value)}
               rows={3}
-              className="input-field resize-none"
+              className={`input-field resize-none ${fieldErrors.description ? 'border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive))]' : ''}`}
               placeholder="Describe la tarea..."
+              maxLength={DESCRIPTION_MAX}
             />
+            <div className="flex items-center justify-between mt-1">
+              {fieldErrors.description && <p className="text-xs text-[hsl(var(--destructive))]">{fieldErrors.description}</p>}
+              <p className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">{form.description.length}/{DESCRIPTION_MAX}</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -149,11 +207,14 @@ function TaskModal({ open, onClose, form, setForm, onSubmit, projects, users, ti
               <input
                 type="number"
                 step="0.5"
+                min="0"
+                max={HOURS_MAX}
                 value={form.estimatedHours}
-                onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))}
-                className="input-field"
+                onChange={(e) => handleChange('estimatedHours', e.target.value)}
+                className={`input-field ${fieldErrors.estimatedHours ? 'border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive))]' : ''}`}
                 placeholder="0"
               />
+              {fieldErrors.estimatedHours && <p className="text-xs text-[hsl(var(--destructive))] mt-1">{fieldErrors.estimatedHours}</p>}
             </div>
           </div>
 
@@ -291,22 +352,36 @@ export default function Tasks() {
     setSelectedId(selectedId === id ? null : id);
   };
 
+  const validateTaskForm = () => {
+    if (!form.title.trim()) { setError('El titulo es requerido'); return false; }
+    if (form.title.trim().length < 3) { setError('El titulo debe tener al menos 3 caracteres'); return false; }
+    if (form.title.length > TITLE_MAX) { setError(`El titulo no puede superar ${TITLE_MAX} caracteres`); return false; }
+    if (form.description.length > DESCRIPTION_MAX) { setError(`La descripcion no puede superar ${DESCRIPTION_MAX} caracteres`); return false; }
+    const hours = parseFloat(form.estimatedHours);
+    if (form.estimatedHours !== '' && !isNaN(hours)) {
+      if (hours < 0) { setError('Las horas estimadas no pueden ser negativas'); return false; }
+      if (hours > HOURS_MAX) { setError(`Las horas estimadas no pueden superar ${HOURS_MAX}`); return false; }
+    }
+    return true;
+  };
+
   const addTask = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) { setError('El titulo es requerido'); return; }
+    if (!validateTaskForm()) return;
     setError('');
     try {
+      const hours = parseFloat(form.estimatedHours);
       await api('/api/tasks', {
         method: 'POST',
         body: {
           title: form.title.trim(),
-          description: form.description || '',
+          description: form.description.trim(),
           status: form.status,
           priority: form.priority,
           projectId: form.projectId || null,
           assignedTo: form.assignedTo || null,
           dueDate: form.dueDate || '',
-          estimatedHours: parseFloat(form.estimatedHours) || 0,
+          estimatedHours: (!isNaN(hours) && hours >= 0) ? hours : 0,
         },
       });
       closeModal();
@@ -319,20 +394,21 @@ export default function Tasks() {
   const updateTask = async (e) => {
     e.preventDefault();
     if (!selectedId) { setError('Selecciona una tarea'); return; }
-    if (!form.title.trim()) { setError('El titulo es requerido'); return; }
+    if (!validateTaskForm()) return;
     setError('');
     try {
+      const hours = parseFloat(form.estimatedHours);
       await api(`/api/tasks/${selectedId}`, {
         method: 'PUT',
         body: {
           title: form.title.trim(),
-          description: form.description || '',
+          description: form.description.trim(),
           status: form.status,
           priority: form.priority,
           projectId: form.projectId || null,
           assignedTo: form.assignedTo || null,
           dueDate: form.dueDate || '',
-          estimatedHours: parseFloat(form.estimatedHours) || 0,
+          estimatedHours: (!isNaN(hours) && hours >= 0) ? hours : 0,
         },
       });
       closeModal();

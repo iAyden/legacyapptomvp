@@ -18,6 +18,18 @@ router.post('/register', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
     }
+    if (String(username).trim().length < 3) {
+      return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres' });
+    }
+    if (String(username).trim().length > 30) {
+      return res.status(400).json({ error: 'El usuario no puede superar 30 caracteres' });
+    }
+    if (/\s/.test(String(username).trim())) {
+      return res.status(400).json({ error: 'El usuario no puede contener espacios' });
+    }
+    if (String(password).length < 4) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    }
 
     // Check if user exists
     const existingUser = await User.findOne({ username });

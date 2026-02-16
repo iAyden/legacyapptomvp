@@ -2,8 +2,43 @@ import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 import { Plus, Pencil, Trash2, X, FolderKanban } from 'lucide-react';
 
+const PROJECT_NAME_MAX = 60;
+const PROJECT_DESC_MAX = 300;
+
 function ProjectModal({ open, onClose, form, setForm, onSubmit, title, submitLabel, error }) {
   const overlayRef = useRef(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const handleChange = (name, value) => {
+    setForm((f) => ({ ...f, [name]: value }));
+    let err = '';
+    if (name === 'name') {
+      if (!value.trim()) err = 'El nombre es requerido';
+      else if (value.trim().length < 2) err = 'Minimo 2 caracteres';
+      else if (value.length > PROJECT_NAME_MAX) err = `Maximo ${PROJECT_NAME_MAX} caracteres`;
+    }
+    if (name === 'description') {
+      if (value.length > PROJECT_DESC_MAX) err = `Maximo ${PROJECT_DESC_MAX} caracteres`;
+    }
+    setFieldErrors((prev) => ({ ...prev, [name]: err }));
+  };
+
+  const validateAll = () => {
+    const errors = {};
+    if (!form.name.trim()) errors.name = 'El nombre es requerido';
+    else if (form.name.trim().length < 2) errors.name = 'Minimo 2 caracteres';
+    else if (form.name.length > PROJECT_NAME_MAX) errors.name = `Maximo ${PROJECT_NAME_MAX} caracteres`;
+    if (form.description.length > PROJECT_DESC_MAX) errors.description = `Maximo ${PROJECT_DESC_MAX} caracteres`;
+    setFieldErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validateAll()) return;
+    onSubmit(e);
+  };
+
   if (!open) return null;
   return (
     <div ref={overlayRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}>
@@ -14,14 +49,36 @@ function ProjectModal({ open, onClose, form, setForm, onSubmit, title, submitLab
             <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
           </button>
         </div>
-        <form onSubmit={onSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Nombre *</label>
-            <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input-field" placeholder="Nombre del proyecto" required />
+            <input
+              value={form.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              className={`input-field ${fieldErrors.name ? 'border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive))]' : ''}`}
+              placeholder="Nombre del proyecto"
+              maxLength={PROJECT_NAME_MAX}
+              required
+            />
+            <div className="flex items-center justify-between mt-1">
+              {fieldErrors.name && <p className="text-xs text-[hsl(var(--destructive))]">{fieldErrors.name}</p>}
+              <p className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">{form.name.length}/{PROJECT_NAME_MAX}</p>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Descripcion</label>
-            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="input-field resize-none" placeholder="Describe el proyecto..." />
+            <textarea
+              value={form.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              rows={3}
+              className={`input-field resize-none ${fieldErrors.description ? 'border-[hsl(var(--destructive))] focus:ring-[hsl(var(--destructive))]' : ''}`}
+              placeholder="Describe el proyecto..."
+              maxLength={PROJECT_DESC_MAX}
+            />
+            <div className="flex items-center justify-between mt-1">
+              {fieldErrors.description && <p className="text-xs text-[hsl(var(--destructive))]">{fieldErrors.description}</p>}
+              <p className="text-xs text-[hsl(var(--muted-foreground))] ml-auto">{form.description.length}/{PROJECT_DESC_MAX}</p>
+            </div>
           </div>
           {error && <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>}
           <div className="flex items-center justify-end gap-3 pt-2">
@@ -65,12 +122,20 @@ export default function Projects() {
   };
   const closeModal = () => { setModalMode(null); setError(''); };
 
+  const validateProjectForm = () => {
+    if (!form.name.trim()) { setError('El nombre es requerido'); return false; }
+    if (form.name.trim().length < 2) { setError('El nombre debe tener al menos 2 caracteres'); return false; }
+    if (form.name.length > PROJECT_NAME_MAX) { setError(`El nombre no puede superar ${PROJECT_NAME_MAX} caracteres`); return false; }
+    if (form.description.length > PROJECT_DESC_MAX) { setError(`La descripcion no puede superar ${PROJECT_DESC_MAX} caracteres`); return false; }
+    return true;
+  };
+
   const addProject = async (e) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError('El nombre es requerido'); return; }
+    if (!validateProjectForm()) return;
     setError('');
     try {
-      await api('/api/projects', { method: 'POST', body: { name: form.name.trim(), description: form.description || '' } });
+      await api('/api/projects', { method: 'POST', body: { name: form.name.trim(), description: form.description.trim() } });
       closeModal();
       load();
     } catch (e) { setError(e.message); }
@@ -78,10 +143,11 @@ export default function Projects() {
 
   const updateProject = async (e) => {
     e.preventDefault();
-    if (!selectedId || !form.name.trim()) { setError('El nombre es requerido'); return; }
+    if (!selectedId) { setError('Selecciona un proyecto'); return; }
+    if (!validateProjectForm()) return;
     setError('');
     try {
-      await api(`/api/projects/${selectedId}`, { method: 'PUT', body: { name: form.name.trim(), description: form.description || '' } });
+      await api(`/api/projects/${selectedId}`, { method: 'PUT', body: { name: form.name.trim(), description: form.description.trim() } });
       closeModal();
       setSelectedId(null);
       load();

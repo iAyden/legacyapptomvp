@@ -14,13 +14,24 @@ export default function Login() {
 
   if (isAuthenticated()) return <Navigate to="/tasks" replace />;
 
+  const USERNAME_MIN = 3;
+  const USERNAME_MAX = 30;
+  const PASSWORD_MIN = 4;
+
+  const validateAuthForm = () => {
+    if (!username.trim()) { setError('El usuario es requerido'); return false; }
+    if (username.trim().length < USERNAME_MIN) { setError(`El usuario debe tener al menos ${USERNAME_MIN} caracteres`); return false; }
+    if (username.trim().length > USERNAME_MAX) { setError(`El usuario no puede superar ${USERNAME_MAX} caracteres`); return false; }
+    if (!password) { setError('La contrasena es requerida'); return false; }
+    if (password.length < PASSWORD_MIN) { setError(`La contrasena debe tener al menos ${PASSWORD_MIN} caracteres`); return false; }
+    if (/\s/.test(username.trim())) { setError('El usuario no puede contener espacios'); return false; }
+    return true;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    if (!username.trim() || !password) {
-      setError('Usuario y contrasena requeridos');
-      return;
-    }
+    if (!validateAuthForm()) return;
     setLoading(true);
     try {
       const { token, user } = await api('/api/auth/login', {
@@ -40,10 +51,7 @@ export default function Login() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-    if (!username.trim() || !password) {
-      setError('Usuario y contrasena requeridos');
-      return;
-    }
+    if (!validateAuthForm()) return;
     setLoading(true);
     try {
       const { token, user } = await api('/api/auth/register', {

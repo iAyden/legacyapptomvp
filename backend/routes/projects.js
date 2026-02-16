@@ -24,9 +24,18 @@ router.post('/', async (req, res) => {
     if (!name || !String(name).trim()) {
       return res.status(400).json({ error: 'El nombre es requerido' });
     }
+    if (String(name).trim().length < 2) {
+      return res.status(400).json({ error: 'El nombre debe tener al menos 2 caracteres' });
+    }
+    if (String(name).length > 60) {
+      return res.status(400).json({ error: 'El nombre no puede superar 60 caracteres' });
+    }
+    if (description != null && String(description).length > 300) {
+      return res.status(400).json({ error: 'La descripción no puede superar 300 caracteres' });
+    }
     const project = await Project.create({
       name: String(name).trim(),
-      description: description != null ? String(description) : ''
+      description: description != null ? String(description).trim() : ''
     });
     res.status(201).json({
       ...project.toObject(),
@@ -46,8 +55,20 @@ router.put('/:id', async (req, res) => {
     if (!project) {
       return res.status(404).json({ error: 'Proyecto no encontrado' });
     }
+    if (name != null && !String(name).trim()) {
+      return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+    if (name != null && String(name).trim().length < 2) {
+      return res.status(400).json({ error: 'El nombre debe tener al menos 2 caracteres' });
+    }
+    if (name != null && String(name).length > 60) {
+      return res.status(400).json({ error: 'El nombre no puede superar 60 caracteres' });
+    }
+    if (description != null && String(description).length > 300) {
+      return res.status(400).json({ error: 'La descripción no puede superar 300 caracteres' });
+    }
     if (name != null) project.name = String(name).trim();
-    if (description != null) project.description = String(description);
+    if (description != null) project.description = String(description).trim();
     await project.save();
     res.json({ ...project.toObject(), id: project._id.toString() });
   } catch (error) {

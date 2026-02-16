@@ -25,10 +25,15 @@ export default function Comments() {
     }
   };
 
+  const COMMENT_MIN = 1;
+  const COMMENT_MAX = 500;
+
   const addComment = async (e) => {
     e.preventDefault();
     if (!selectedTask) { setError('Selecciona una tarea primero'); return; }
     if (!commentText.trim()) { setError('El comentario no puede estar vacio'); return; }
+    if (commentText.trim().length < COMMENT_MIN) { setError(`El comentario debe tener al menos ${COMMENT_MIN} caracteres`); return; }
+    if (commentText.length > COMMENT_MAX) { setError(`El comentario no puede superar ${COMMENT_MAX} caracteres`); return; }
     setError('');
     try {
       await api('/api/comments', { method: 'POST', body: { taskId: selectedTask._id || selectedTask.id, commentText: commentText.trim() } });
@@ -54,7 +59,8 @@ export default function Comments() {
           </div>
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Comentario</label>
-            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} rows={3} className="input-field resize-none" required placeholder="Escribe tu comentario..." />
+            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} rows={3} className="input-field resize-none" required placeholder="Escribe tu comentario..." maxLength={COMMENT_MAX} />
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 text-right">{commentText.length}/{COMMENT_MAX}</p>
           </div>
           <div className="flex gap-2">
             <button type="submit" className="btn-primary"><Send className="w-4 h-4" />Agregar</button>

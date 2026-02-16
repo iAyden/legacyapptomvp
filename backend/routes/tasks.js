@@ -120,16 +120,32 @@ router.post('/', async (req, res) => {
     if (!title || !String(title).trim()) {
       return res.status(400).json({ error: 'El título es requerido' });
     }
+    if (String(title).trim().length < 3) {
+      return res.status(400).json({ error: 'El título debe tener al menos 3 caracteres' });
+    }
+    if (String(title).length > 100) {
+      return res.status(400).json({ error: 'El título no puede superar 100 caracteres' });
+    }
+    if (description != null && String(description).length > 500) {
+      return res.status(400).json({ error: 'La descripción no puede superar 500 caracteres' });
+    }
+    const parsedHours = typeof estimatedHours === 'number' ? estimatedHours : parseFloat(estimatedHours) || 0;
+    if (parsedHours < 0) {
+      return res.status(400).json({ error: 'Las horas estimadas no pueden ser negativas' });
+    }
+    if (parsedHours > 10000) {
+      return res.status(400).json({ error: 'Las horas estimadas no pueden superar 10000' });
+    }
 
     const task = await Task.create({
       title: String(title).trim(),
-      description: description != null ? String(description) : '',
+      description: description != null ? String(description).trim() : '',
       status: status && statusEnum.includes(status) ? status : 'Pendiente',
       priority: priority && priorityEnum.includes(priority) ? priority : 'Media',
       projectId: projectId && mongoose.isValidObjectId(projectId) ? projectId : null,
       assignedTo: assignedTo && mongoose.isValidObjectId(assignedTo) ? assignedTo : null,
       dueDate: dueDate != null ? String(dueDate) : '',
-      estimatedHours: typeof estimatedHours === 'number' ? estimatedHours : parseFloat(estimatedHours) || 0,
+      estimatedHours: parsedHours,
       actualHours: 0,
       createdBy: req.user._id
     });
@@ -187,12 +203,26 @@ router.put('/:id', async (req, res) => {
     if (title != null && !String(title).trim()) {
       return res.status(400).json({ error: 'El título es requerido' });
     }
+    if (title != null && String(title).trim().length < 3) {
+      return res.status(400).json({ error: 'El título debe tener al menos 3 caracteres' });
+    }
+    if (title != null && String(title).length > 100) {
+      return res.status(400).json({ error: 'El título no puede superar 100 caracteres' });
+    }
+    if (description != null && String(description).length > 500) {
+      return res.status(400).json({ error: 'La descripción no puede superar 500 caracteres' });
+    }
+    if (estimatedHours !== undefined) {
+      const parsedH = typeof estimatedHours === 'number' ? estimatedHours : parseFloat(estimatedHours) || 0;
+      if (parsedH < 0) return res.status(400).json({ error: 'Las horas estimadas no pueden ser negativas' });
+      if (parsedH > 10000) return res.status(400).json({ error: 'Las horas estimadas no pueden superar 10000' });
+    }
 
     const oldStatus = task.status;
     const oldTitle = task.title;
 
     if (title != null) task.title = String(title).trim();
-    if (description != null) task.description = String(description);
+    if (description != null) task.description = String(description).trim();
     if (status != null && statusEnum.includes(status)) task.status = status;
     if (priority != null && priorityEnum.includes(priority)) task.priority = priority;
     if (projectId !== undefined) task.projectId = projectId && mongoose.isValidObjectId(projectId) ? projectId : null;
