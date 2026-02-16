@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { MessageSquare, Send, RefreshCw } from 'lucide-react';
+import TaskSearchInput from '../components/TaskSearchInput';
 
 export default function Comments() {
-  const [taskId, setTaskId] = useState('');
+  const [selectedTask, setSelectedTask] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const loadComments = async () => {
-    if (!taskId.trim()) { setError('ID de tarea requerido'); return; }
+    if (!selectedTask) { setError('Selecciona una tarea primero'); return; }
     setError('');
     setLoading(true);
     try {
-      const data = await api(`/api/comments/task/${taskId.trim()}`);
+      const data = await api(`/api/comments/task/${selectedTask._id || selectedTask.id}`);
       setComments(Array.isArray(data) ? data : []);
     } catch (e) {
       setError(e.message);
@@ -26,11 +27,11 @@ export default function Comments() {
 
   const addComment = async (e) => {
     e.preventDefault();
-    if (!taskId.trim()) { setError('ID de tarea requerido'); return; }
+    if (!selectedTask) { setError('Selecciona una tarea primero'); return; }
     if (!commentText.trim()) { setError('El comentario no puede estar vacio'); return; }
     setError('');
     try {
-      await api('/api/comments', { method: 'POST', body: { taskId: taskId.trim(), commentText: commentText.trim() } });
+      await api('/api/comments', { method: 'POST', body: { taskId: selectedTask._id || selectedTask.id, commentText: commentText.trim() } });
       setCommentText('');
       loadComments();
     } catch (e) {
@@ -48,8 +49,8 @@ export default function Comments() {
       <div className="card p-5">
         <form onSubmit={addComment} className="space-y-4 max-w-lg">
           <div>
-            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">ID Tarea</label>
-            <input type="text" value={taskId} onChange={(e) => setTaskId(e.target.value)} className="input-field" placeholder="ID de la tarea" />
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Tarea</label>
+            <TaskSearchInput onSelect={setSelectedTask} selectedTask={selectedTask} />
           </div>
           <div>
             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Comentario</label>
@@ -76,7 +77,7 @@ export default function Comments() {
               <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-[hsl(var(--muted-foreground))] text-center py-8">Ingresa un ID de tarea y pulsa Cargar</p>
+            <p className="text-[hsl(var(--muted-foreground))] text-center py-8">Busca una tarea por nombre y pulsa Cargar</p>
           ) : (
             <ul className="space-y-4">
               {comments.map((c) => (
