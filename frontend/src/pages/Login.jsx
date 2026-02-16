@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { api, setToken, setUser, isAuthenticated } from '../lib/api';
+import { CheckSquare, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function Login() {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,7 +18,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
-      setError('Usuario y contraseña requeridos');
+      setError('Usuario y contrasena requeridos');
       return;
     }
     setLoading(true);
@@ -29,7 +31,7 @@ export default function Login() {
       setUser(user);
       navigate('/tasks', { replace: true });
     } catch (err) {
-      setError(err.message || 'Credenciales inválidas');
+      setError(err.message || 'Credenciales invalidas');
     } finally {
       setLoading(false);
     }
@@ -39,7 +41,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
-      setError('Usuario y contraseña requeridos');
+      setError('Usuario y contrasena requeridos');
       return;
     }
     setLoading(true);
@@ -59,92 +61,105 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-100">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-6">
-        <h1 className="text-xl font-semibold text-center text-slate-800 mb-6">Task Manager</h1>
-        <h2 className="text-lg font-medium text-slate-700 mb-4">
-          {mode === 'login' ? 'Login' : 'Registro'}
-        </h2>
-        {mode === 'login' ? (
-          <form onSubmit={handleLogin} className="space-y-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[hsl(var(--background))]">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center mb-4">
+            <CheckSquare className="w-6 h-6 text-[hsl(var(--primary-foreground))]" />
+          </div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">TaskFlow</h1>
+          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Gestiona tus tareas de forma eficiente</p>
+        </div>
+
+        {/* Card */}
+        <div className="card p-6">
+          <h2 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-6">
+            {mode === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}
+          </h2>
+
+          <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Usuario</label>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Usuario</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                className="input-field"
                 autoComplete="username"
+                placeholder="Tu nombre de usuario"
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                autoComplete="current-password"
-              />
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Contrasena</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field pr-10"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  placeholder="Tu contrasena"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                  aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            {error && (
+              <div className="px-3 py-2 bg-[hsl(var(--destructive))]/10 border border-[hsl(var(--destructive))]/20 rounded-[var(--radius)]">
+                <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
+              className="btn-primary w-full"
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {mode === 'login'
+                ? (loading ? 'Entrando...' : 'Entrar')
+                : (loading ? 'Registrando...' : 'Registrarse')
+              }
             </button>
           </form>
-        ) : (
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Usuario</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                autoComplete="username"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Contraseña</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-                autoComplete="new-password"
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50"
-            >
-              {loading ? 'Registrando...' : 'Registrarse'}
-            </button>
-          </form>
-        )}
-        <p className="mt-4 text-center text-sm text-slate-600">
-          {mode === 'login' ? (
-            <>
-              ¿No tienes cuenta?{' '}
-              <button type="button" onClick={() => { setMode('register'); setError(''); }} className="text-slate-800 font-medium hover:underline">
-                Registrarse
-              </button>
-            </>
-          ) : (
-            <>
-              ¿Ya tienes cuenta?{' '}
-              <button type="button" onClick={() => { setMode('login'); setError(''); }} className="text-slate-800 font-medium hover:underline">
-                Entrar
-              </button>
-            </>
-          )}
-        </p>
+
+          <div className="mt-6 pt-6 border-t border-[hsl(var(--border))] text-center">
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              {mode === 'login' ? (
+                <>
+                  No tienes cuenta?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('register'); setError(''); }}
+                    className="font-medium text-[hsl(var(--primary))] hover:underline"
+                  >
+                    Registrarse
+                  </button>
+                </>
+              ) : (
+                <>
+                  Ya tienes cuenta?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setError(''); }}
+                    className="font-medium text-[hsl(var(--primary))] hover:underline"
+                  >
+                    Entrar
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

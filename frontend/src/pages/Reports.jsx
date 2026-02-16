@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api, downloadTasksCsv } from '../lib/api';
+import { BarChart3, Download, FileText, Users, FolderKanban } from 'lucide-react';
 
 const STATUS_OPTIONS = ['Pendiente', 'En Progreso', 'Completada', 'Bloqueada', 'Cancelada'];
-const PRIORITY_OPTIONS = ['Baja', 'Media', 'Alta', 'Crítica'];
+const PRIORITY_OPTIONS = ['Baja', 'Media', 'Alta', 'Critica'];
 
 export default function Reports() {
   const [reportType, setReportType] = useState('');
@@ -10,17 +11,10 @@ export default function Reports() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [projects, setProjects] = useState([]);
-  const [filters, setFilters] = useState({
-    searchText: '',
-    status: '',
-    priority: '',
-    projectId: '',
-  });
+  const [filters, setFilters] = useState({ searchText: '', status: '', priority: '', projectId: '' });
 
   useEffect(() => {
-    api('/api/projects')
-      .then((data) => setProjects(Array.isArray(data) ? data : []))
-      .catch(() => {});
+    api('/api/projects').then((data) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
 
   const loadReport = async (type) => {
@@ -52,107 +46,94 @@ export default function Reports() {
     }
   };
 
+  const reportButtons = [
+    { type: 'tasks', label: 'Tareas', icon: FileText },
+    { type: 'projects', label: 'Proyectos', icon: FolderKanban },
+    { type: 'users', label: 'Usuarios', icon: Users },
+  ];
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">Generación de Reportes</h2>
+      <div>
+        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">Reportes</h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Genera reportes y descarga datos</p>
+      </div>
 
-      {/* Report type buttons - legacy: tasks / projects / users */}
-      <section className="bg-white rounded-xl shadow p-4 md:p-6">
-        <h3 className="font-medium text-slate-700 mb-3">Tipo de reporte</h3>
+      {/* Report type */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-3 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4" />
+          Tipo de reporte
+        </h3>
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => loadReport('tasks')}
-            disabled={loading}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 text-sm"
-          >
-            Reporte de Tareas
-          </button>
-          <button
-            type="button"
-            onClick={() => loadReport('projects')}
-            disabled={loading}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 text-sm"
-          >
-            Reporte de Proyectos
-          </button>
-          <button
-            type="button"
-            onClick={() => loadReport('users')}
-            disabled={loading}
-            className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 disabled:opacity-50 text-sm"
-          >
-            Reporte de Usuarios
-          </button>
+          {reportButtons.map(({ type, label, icon: Icon }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => loadReport(type)}
+              disabled={loading}
+              className={`btn-secondary ${reportType === type ? 'ring-2 ring-[hsl(var(--ring))]' : ''}`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* Filters for CSV download - matching legacy (status / project / etc.) */}
-      <section className="bg-white rounded-xl shadow p-4 md:p-6">
-        <h3 className="font-medium text-slate-700 mb-3">Filtros para descargar CSV</h3>
-        <p className="text-slate-500 text-sm mb-3">Opcional. Si no eliges filtros, se descargan todas las tareas.</p>
+      {/* CSV download */}
+      <div className="card p-5">
+        <h3 className="text-sm font-semibold text-[hsl(var(--foreground))] mb-1 flex items-center gap-2">
+          <Download className="w-4 h-4" />
+          Descargar CSV
+        </h3>
+        <p className="text-xs text-[hsl(var(--muted-foreground))] mb-4">Opcional: filtra antes de descargar.</p>
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
-          <input
-            type="text"
-            placeholder="Texto"
-            value={filters.searchText}
-            onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          />
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
+          <input type="text" placeholder="Texto" value={filters.searchText} onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))} className="input-field" />
+          <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))} className="input-field">
             <option value="">Estado: todos</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select
-            value={filters.priority}
-            onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
+          <select value={filters.priority} onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))} className="input-field">
             <option value="">Prioridad: todas</option>
-            {PRIORITY_OPTIONS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
+            {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
-          <select
-            value={filters.projectId}
-            onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
+          <select value={filters.projectId} onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value }))} className="input-field">
             <option value="">Proyecto: todos</option>
-            {projects.map((p) => (
-              <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>
-            ))}
+            {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
           </select>
-          <button
-            type="button"
-            onClick={handleDownloadCsv}
-            className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 text-sm"
-          >
-            Descargar CSV
+          <button type="button" onClick={handleDownloadCsv} className="btn-primary">
+            <Download className="w-4 h-4" />
+            Descargar
           </button>
         </div>
-        {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
-      </section>
+        {error && <p className="mt-3 text-sm text-[hsl(var(--destructive))]">{error}</p>}
+      </div>
 
-      <section className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-medium text-slate-700 mb-2">Reporte</h3>
-        {loading ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : (
-          <textarea
-            readOnly
-            value={reportText}
-            rows={20}
-            className="w-full px-3 py-2 border rounded-lg font-mono text-sm bg-slate-50"
-          />
-        )}
-      </section>
+      {/* Report output */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+          <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Reporte {reportType ? `- ${reportType}` : ''}
+          </h3>
+        </div>
+        <div className="p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <textarea
+              readOnly
+              value={reportText}
+              rows={16}
+              className="input-field font-mono text-xs resize-none bg-[hsl(var(--secondary))]"
+              placeholder="Selecciona un tipo de reporte para ver los resultados..."
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

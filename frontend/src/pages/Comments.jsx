@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { MessageSquare, Send, RefreshCw } from 'lucide-react';
 
 export default function Comments() {
   const [taskId, setTaskId] = useState('');
@@ -26,7 +27,7 @@ export default function Comments() {
   const addComment = async (e) => {
     e.preventDefault();
     if (!taskId.trim()) { setError('ID de tarea requerido'); return; }
-    if (!commentText.trim()) { setError('El comentario no puede estar vacío'); return; }
+    if (!commentText.trim()) { setError('El comentario no puede estar vacio'); return; }
     setError('');
     try {
       await api('/api/comments', { method: 'POST', body: { taskId: taskId.trim(), commentText: commentText.trim() } });
@@ -39,54 +40,63 @@ export default function Comments() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">Comentarios de Tareas</h2>
+      <div>
+        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">Comentarios</h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Gestiona comentarios de tareas</p>
+      </div>
 
-      <section className="bg-white rounded-xl shadow p-4 md:p-6">
-        <form onSubmit={addComment} className="space-y-4 max-w-md">
+      <div className="card p-5">
+        <form onSubmit={addComment} className="space-y-4 max-w-lg">
           <div>
-            <label className="block text-sm text-slate-600 mb-1">ID Tarea</label>
-            <input
-              type="text"
-              value={taskId}
-              onChange={(e) => setTaskId(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">ID Tarea</label>
+            <input type="text" value={taskId} onChange={(e) => setTaskId(e.target.value)} className="input-field" placeholder="ID de la tarea" />
           </div>
           <div>
-            <label className="block text-sm text-slate-600 mb-1">Comentario</label>
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Comentario</label>
+            <textarea value={commentText} onChange={(e) => setCommentText(e.target.value)} rows={3} className="input-field resize-none" required placeholder="Escribe tu comentario..." />
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600">Agregar Comentario</button>
-            <button type="button" onClick={loadComments} disabled={loading} className="px-4 py-2 border rounded-lg hover:bg-slate-100">Cargar Comentarios</button>
+            <button type="submit" className="btn-primary"><Send className="w-4 h-4" />Agregar</button>
+            <button type="button" onClick={loadComments} disabled={loading} className="btn-secondary"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Cargar</button>
           </div>
         </form>
-        {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
-      </section>
+        {error && <p className="mt-3 text-sm text-[hsl(var(--destructive))]">{error}</p>}
+      </div>
 
-      <section className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-medium text-slate-700 mb-2">Comentarios</h3>
-        {loading ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : comments.length === 0 ? (
-          <p className="text-slate-500">Ingresa un ID de tarea y pulsa Cargar Comentarios</p>
-        ) : (
-          <ul className="space-y-3 text-sm">
-            {comments.map((c) => (
-              <li key={c.id || c._id} className="border-b border-slate-100 pb-2">
-                <span className="text-slate-500">[{c.createdAt ? new Date(c.createdAt).toLocaleString() : ''}] {c.username || 'Usuario'}: </span>
-                {c.commentText}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+          <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Comentarios
+          </h3>
+        </div>
+        <div className="p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : comments.length === 0 ? (
+            <p className="text-[hsl(var(--muted-foreground))] text-center py-8">Ingresa un ID de tarea y pulsa Cargar</p>
+          ) : (
+            <ul className="space-y-4">
+              {comments.map((c) => (
+                <li key={c.id || c._id} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--secondary))] flex items-center justify-center text-xs font-medium text-[hsl(var(--secondary-foreground))] shrink-0">
+                    {(c.username || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-[hsl(var(--foreground))]">{c.username || 'Usuario'}</span>
+                      {c.createdAt && <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(c.createdAt).toLocaleString()}</span>}
+                    </div>
+                    <p className="text-sm text-[hsl(var(--foreground))]/80 mt-1">{c.commentText}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

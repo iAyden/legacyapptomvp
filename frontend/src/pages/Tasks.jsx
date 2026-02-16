@@ -1,8 +1,173 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Clock,
+  User,
+  FolderKanban,
+  X,
+  Pencil,
+  Trash2,
+  Send,
+  ChevronDown,
+  BarChart3,
+  MessageSquare,
+  History,
+} from 'lucide-react';
 
 const STATUS_OPTIONS = ['Pendiente', 'En Progreso', 'Completada', 'Bloqueada', 'Cancelada'];
-const PRIORITY_OPTIONS = ['Baja', 'Media', 'Alta', 'Crítica'];
+const PRIORITY_OPTIONS = ['Baja', 'Media', 'Alta', 'Critica'];
+
+function StatusBadge({ status }) {
+  const map = {
+    'Pendiente': 'badge-pendiente',
+    'En Progreso': 'badge-progreso',
+    'Completada': 'badge-completada',
+    'Bloqueada': 'badge-bloqueada',
+    'Cancelada': 'badge-cancelada',
+  };
+  return <span className={`badge ${map[status] || 'badge-pendiente'}`}>{status || 'Pendiente'}</span>;
+}
+
+function PriorityBadge({ priority }) {
+  const map = {
+    'Baja': 'badge-baja',
+    'Media': 'badge-media',
+    'Alta': 'badge-alta',
+    'Critica': 'badge-critica',
+  };
+  return <span className={`badge ${map[priority] || 'badge-media'}`}>{priority || 'Media'}</span>;
+}
+
+function TaskModal({ open, onClose, form, setForm, onSubmit, projects, users, title, submitLabel, error }) {
+  const overlayRef = useRef(null);
+
+  if (!open) return null;
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+    >
+      <div className="w-full max-w-lg bg-[hsl(var(--card))] rounded-xl shadow-xl border border-[hsl(var(--border))] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{title}</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors">
+            <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={onSubmit} className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Titulo *</label>
+            <input
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              className="input-field"
+              placeholder="Nombre de la tarea"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Descripcion</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              rows={3}
+              className="input-field resize-none"
+              placeholder="Describe la tarea..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Estado</label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                className="input-field"
+              >
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Prioridad</label>
+              <select
+                value={form.priority}
+                onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
+                className="input-field"
+              >
+                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Proyecto</label>
+              <select
+                value={form.projectId}
+                onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Sin proyecto</option>
+                {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Asignado a</label>
+              <select
+                value={form.assignedTo}
+                onChange={(e) => setForm((f) => ({ ...f, assignedTo: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Sin asignar</option>
+                {users.map((u) => <option key={u.id || u._id} value={u.id || u._id}>{u.username}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Fecha vencimiento</label>
+              <input
+                type="date"
+                value={form.dueDate}
+                onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Horas estimadas</label>
+              <input
+                type="number"
+                step="0.5"
+                value={form.estimatedHours}
+                onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))}
+                className="input-field"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>}
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn-ghost">Cancelar</button>
+            <button type="submit" className="btn-primary">{submitLabel}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([]);
@@ -12,7 +177,8 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({ searchText: '', status: '', priority: '', projectId: '' });
   const [appliedFilters, setAppliedFilters] = useState({});
   const [form, setForm] = useState({
@@ -81,24 +247,26 @@ export default function Tasks() {
     else { setComments([]); setHistory([]); setCommentText(''); }
   }, [selectedId]);
 
-  const clearForm = () => {
-    setSelectedId(null);
-    setShowForm(false);
-    setForm({
-      title: '',
-      description: '',
-      status: 'Pendiente',
-      priority: 'Media',
-      projectId: '',
-      assignedTo: '',
-      dueDate: '',
-      estimatedHours: '',
-    });
+  const emptyForm = () => ({
+    title: '',
+    description: '',
+    status: 'Pendiente',
+    priority: 'Media',
+    projectId: '',
+    assignedTo: '',
+    dueDate: '',
+    estimatedHours: '',
+  });
+
+  const openAddModal = () => {
+    setForm(emptyForm());
+    setError('');
+    setModalMode('add');
   };
 
-  const selectTask = (task) => {
+  const openEditModal = (task) => {
     const id = task.id || task._id;
-    setSelectedId(selectedId === id ? null : id);
+    setSelectedId(id);
     setForm({
       title: task.title || '',
       description: task.description || '',
@@ -109,11 +277,23 @@ export default function Tasks() {
       dueDate: task.dueDate || '',
       estimatedHours: task.estimatedHours ?? '',
     });
+    setError('');
+    setModalMode('edit');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setError('');
+  };
+
+  const selectTask = (task) => {
+    const id = task.id || task._id;
+    setSelectedId(selectedId === id ? null : id);
   };
 
   const addTask = async (e) => {
     e.preventDefault();
-    if (!form.title.trim()) { setError('El título es requerido'); return; }
+    if (!form.title.trim()) { setError('El titulo es requerido'); return; }
     setError('');
     try {
       await api('/api/tasks', {
@@ -129,7 +309,7 @@ export default function Tasks() {
           estimatedHours: parseFloat(form.estimatedHours) || 0,
         },
       });
-      clearForm();
+      closeModal();
       load();
     } catch (e) {
       setError(e.message);
@@ -139,7 +319,7 @@ export default function Tasks() {
   const updateTask = async (e) => {
     e.preventDefault();
     if (!selectedId) { setError('Selecciona una tarea'); return; }
-    if (!form.title.trim()) { setError('El título es requerido'); return; }
+    if (!form.title.trim()) { setError('El titulo es requerido'); return; }
     setError('');
     try {
       await api(`/api/tasks/${selectedId}`, {
@@ -155,6 +335,7 @@ export default function Tasks() {
           estimatedHours: parseFloat(form.estimatedHours) || 0,
         },
       });
+      closeModal();
       load();
       loadDetail(selectedId);
     } catch (e) {
@@ -162,12 +343,12 @@ export default function Tasks() {
     }
   };
 
-  const deleteTask = async () => {
-    if (!selectedId) return;
-    if (!confirm('¿Eliminar esta tarea?')) return;
+  const deleteTask = async (taskId) => {
+    if (!taskId) return;
+    if (!confirm('Eliminar esta tarea?')) return;
     try {
-      await api(`/api/tasks/${selectedId}`, { method: 'DELETE' });
-      clearForm();
+      await api(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      if (selectedId === taskId) setSelectedId(null);
       load();
     } catch (e) {
       setError(e.message);
@@ -197,273 +378,360 @@ export default function Tasks() {
     return u ? u.username : 'Sin asignar';
   };
 
-  if (loading) return <p className="text-slate-600">Cargando tareas...</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-xl font-semibold text-slate-800">Gestión de Tareas</h2>
-        <button
-          type="button"
-          onClick={() => { setShowForm(!showForm); if (!showForm) clearForm(); }}
-          className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 text-sm"
-        >
-          {showForm ? 'Ocultar formulario' : 'Nueva tarea'}
+        <div>
+          <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">Tareas</h2>
+          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Gestiona y organiza tus tareas</p>
+        </div>
+        <button type="button" onClick={openAddModal} className="btn-primary">
+          <Plus className="w-4 h-4" />
+          Nueva tarea
         </button>
       </div>
 
-      {/* Filters - matching legacy search */}
-      <section className="bg-white rounded-xl shadow p-4">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">Filtros</h3>
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
-          <input
-            type="text"
-            placeholder="Texto (título/descripción)"
-            value={filters.searchText}
-            onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          />
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="">Estado: todos</option>
-            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select
-            value={filters.priority}
-            onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="">Prioridad: todas</option>
-            {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <select
-            value={filters.projectId}
-            onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value }))}
-            className="px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="">Proyecto: todos</option>
-            {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
-          </select>
-          <button
-            type="button"
-            onClick={() => setAppliedFilters({ ...filters })}
-            className="px-3 py-2 bg-slate-600 text-white rounded-lg text-sm hover:bg-slate-500"
-          >
-            Buscar
-          </button>
-        </div>
-      </section>
-
-      {(showForm || selectedId) && (
-        <section className="bg-white rounded-xl shadow p-4 md:p-6">
-          <h3 className="font-medium text-slate-700 mb-4">{selectedId ? 'Editar Tarea' : 'Nueva Tarea'}</h3>
-          <form onSubmit={addTask} className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Título *</label>
-              <input
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-                required
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-sm text-slate-600 mb-1">Descripción</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                rows={2}
-                className="w-full px-3 py-2 border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Estado</label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Prioridad</label>
-              <select
-                value={form.priority}
-                onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Proyecto</label>
-              <select
-                value={form.projectId}
-                onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">Sin proyecto</option>
-                {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Asignado a</label>
-              <select
-                value={form.assignedTo}
-                onChange={(e) => setForm((f) => ({ ...f, assignedTo: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              >
-                <option value="">Sin asignar</option>
-                {users.map((u) => <option key={u.id || u._id} value={u.id || u._id}>{u.username}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Fecha vencimiento</label>
-              <input
-                type="text"
-                placeholder="YYYY-MM-DD"
-                value={form.dueDate}
-                onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-600 mb-1">Horas estimadas</label>
-              <input
-                type="number"
-                step="0.5"
-                value={form.estimatedHours}
-                onChange={(e) => setForm((f) => ({ ...f, estimatedHours: e.target.value }))}
-                className="w-full px-3 py-2 border rounded-lg"
-              />
-            </div>
-            <div className="sm:col-span-2 flex flex-wrap gap-2">
-              <button type="submit" className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 text-sm">Agregar</button>
-              <button type="button" onClick={updateTask} className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 text-sm">Actualizar</button>
-              <button type="button" onClick={deleteTask} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 text-sm">Eliminar</button>
-              <button type="button" onClick={clearForm} className="px-4 py-2 border rounded-lg hover:bg-slate-100 text-sm">Limpiar</button>
-            </div>
-          </form>
-          {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
-        </section>
-      )}
-
-      {/* Desktop: table | Mobile: cards */}
-      <section className="bg-white rounded-xl shadow overflow-hidden">
-        <h3 className="font-medium text-slate-700 p-4">Lista de Tareas</h3>
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="text-left p-2">ID</th>
-                <th className="text-left p-2">Título</th>
-                <th className="text-left p-2">Estado</th>
-                <th className="text-left p-2">Prioridad</th>
-                <th className="text-left p-2">Proyecto</th>
-                <th className="text-left p-2">Asignado</th>
-                <th className="text-left p-2">Vencimiento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((task) => (
-                <tr
-                  key={task.id || task._id}
-                  onClick={() => selectTask(task)}
-                  className={`border-t cursor-pointer hover:bg-slate-50 ${selectedId === (task.id || task._id) ? 'bg-slate-200' : ''}`}
-                >
-                  <td className="p-2">{task.id || task._id}</td>
-                  <td className="p-2">{task.title}</td>
-                  <td className="p-2">{task.status || 'Pendiente'}</td>
-                  <td className="p-2">{task.priority || 'Media'}</td>
-                  <td className="p-2">{projectName(task)}</td>
-                  <td className="p-2">{assignedName(task)}</td>
-                  <td className="p-2">{task.dueDate || 'Sin fecha'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="md:hidden divide-y">
-          {tasks.map((task) => (
-            <div
-              key={task.id || task._id}
-              onClick={() => selectTask(task)}
-              className={`p-4 cursor-pointer active:bg-slate-50 ${selectedId === (task.id || task._id) ? 'bg-slate-200' : ''}`}
-            >
-              <div className="font-medium">{task.title}</div>
-              <div className="text-sm text-slate-600 mt-1">
-                {task.status || 'Pendiente'} · {task.priority || 'Media'}
-              </div>
-              <div className="text-sm text-slate-500 mt-0.5">
-                {projectName(task)} · {assignedName(task)} · {task.dueDate || 'Sin fecha'}
-              </div>
+      {/* Stats cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Total', value: tasks.length, color: 'text-[hsl(var(--primary))]' },
+            { label: 'Pendientes', value: tasks.filter(t => t.status === 'Pendiente').length, color: 'text-amber-600' },
+            { label: 'En Progreso', value: tasks.filter(t => t.status === 'En Progreso').length, color: 'text-blue-600' },
+            { label: 'Completadas', value: tasks.filter(t => t.status === 'Completada').length, color: 'text-emerald-600' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="card px-4 py-3">
+              <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{label}</p>
+              <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
             </div>
           ))}
         </div>
-      </section>
+      )}
 
-      {/* Task detail: comments + history (when a task is selected) */}
+      {/* Filters */}
+      <div className="card">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors"
+          >
+            <Filter className="w-4 h-4" />
+            Filtros
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
+          {(appliedFilters.searchText || appliedFilters.status || appliedFilters.priority || appliedFilters.projectId) && (
+            <button
+              type="button"
+              onClick={() => { setFilters({ searchText: '', status: '', priority: '', projectId: '' }); setAppliedFilters({}); }}
+              className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
+        {showFilters && (
+          <div className="px-4 py-4">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                <input
+                  type="text"
+                  placeholder="Buscar por titulo..."
+                  value={filters.searchText}
+                  onChange={(e) => setFilters((f) => ({ ...f, searchText: e.target.value }))}
+                  className="input-field pl-9"
+                />
+              </div>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Estado: todos</option>
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select
+                value={filters.priority}
+                onChange={(e) => setFilters((f) => ({ ...f, priority: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Prioridad: todas</option>
+                {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select
+                value={filters.projectId}
+                onChange={(e) => setFilters((f) => ({ ...f, projectId: e.target.value }))}
+                className="input-field"
+              >
+                <option value="">Proyecto: todos</option>
+                {projects.map((p) => <option key={p.id || p._id} value={p.id || p._id}>{p.name}</option>)}
+              </select>
+              <button
+                type="button"
+                onClick={() => setAppliedFilters({ ...filters })}
+                className="btn-primary"
+              >
+                <Search className="w-4 h-4" />
+                Buscar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Task list */}
+      <div className="card overflow-hidden">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Titulo</th>
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Estado</th>
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Prioridad</th>
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Proyecto</th>
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Asignado</th>
+                <th className="text-left px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Vencimiento</th>
+                <th className="text-right px-4 py-3 font-medium text-[hsl(var(--muted-foreground))]">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[hsl(var(--border))]">
+              {tasks.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-[hsl(var(--muted-foreground))]">
+                    No hay tareas. Crea una nueva tarea para empezar.
+                  </td>
+                </tr>
+              ) : tasks.map((task) => {
+                const id = task.id || task._id;
+                const isSelected = selectedId === id;
+                return (
+                  <tr
+                    key={id}
+                    onClick={() => selectTask(task)}
+                    className={`cursor-pointer transition-colors hover:bg-[hsl(var(--accent))] ${isSelected ? 'bg-[hsl(var(--primary))]/5' : ''}`}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-[hsl(var(--foreground))]">{task.title}</span>
+                    </td>
+                    <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
+                    <td className="px-4 py-3"><PriorityBadge priority={task.priority} /></td>
+                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                      <span className="flex items-center gap-1.5">
+                        <FolderKanban className="w-3.5 h-3.5" />
+                        {projectName(task)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                      <span className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5" />
+                        {assignedName(task)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[hsl(var(--muted-foreground))]">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {task.dueDate || 'Sin fecha'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openEditModal(task); }}
+                          className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); deleteTask(id); }}
+                          className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-[hsl(var(--border))]">
+          {tasks.length === 0 ? (
+            <div className="py-12 text-center text-[hsl(var(--muted-foreground))]">
+              No hay tareas. Crea una nueva tarea para empezar.
+            </div>
+          ) : tasks.map((task) => {
+            const id = task.id || task._id;
+            const isSelected = selectedId === id;
+            return (
+              <div
+                key={id}
+                onClick={() => selectTask(task)}
+                className={`p-4 cursor-pointer transition-colors active:bg-[hsl(var(--accent))] ${isSelected ? 'bg-[hsl(var(--primary))]/5' : ''}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-[hsl(var(--foreground))] truncate">{task.title}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <StatusBadge status={task.status} />
+                      <PriorityBadge priority={task.priority} />
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-[hsl(var(--muted-foreground))]">
+                      <span className="flex items-center gap-1"><FolderKanban className="w-3 h-3" />{projectName(task)}</span>
+                      <span className="flex items-center gap-1"><User className="w-3 h-3" />{assignedName(task)}</span>
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{task.dueDate || 'Sin fecha'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openEditModal(task); }}
+                      className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))]"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); deleteTask(id); }}
+                      className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))]"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Task detail panel */}
       {selectedId && (
-        <section className="bg-white rounded-xl shadow p-4 md:p-6 space-y-4">
-          <h3 className="font-medium text-slate-700">Tarea seleccionada: comentarios e historial</h3>
-          <div className="grid gap-6 md:grid-cols-2">
+        <div className="card overflow-hidden">
+          <div className="px-5 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+            <h3 className="font-semibold text-[hsl(var(--foreground))]">Detalles de la tarea</h3>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 p-5">
+            {/* Comments */}
             <div>
-              <h4 className="text-sm font-medium text-slate-600 mb-2">Comentarios</h4>
-              <form onSubmit={addComment} className="flex gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">Comentarios</h4>
+              </div>
+              <form onSubmit={addComment} className="flex gap-2 mb-4">
                 <input
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Añadir comentario..."
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                  placeholder="Escribe un comentario..."
+                  className="input-field flex-1"
                 />
-                <button type="submit" className="px-3 py-2 bg-slate-600 text-white rounded-lg text-sm">Enviar</button>
+                <button type="submit" className="btn-primary px-3">
+                  <Send className="w-4 h-4" />
+                </button>
               </form>
               {loadingDetail ? (
-                <p className="text-slate-500 text-sm">Cargando...</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Cargando...</p>
               ) : comments.length === 0 ? (
-                <p className="text-slate-500 text-sm">No hay comentarios</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">No hay comentarios</p>
               ) : (
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-3">
                   {comments.map((c) => (
-                    <li key={c.id || c._id} className="border-l-2 border-slate-200 pl-2">
-                      <span className="text-slate-500">{c.username || 'Usuario'}</span>
-                      {c.createdAt && <span className="text-slate-400 text-xs ml-1">{new Date(c.createdAt).toLocaleString()}</span>}
-                      <p className="mt-0.5">{c.commentText}</p>
+                    <li key={c.id || c._id} className="flex gap-3">
+                      <div className="w-7 h-7 rounded-full bg-[hsl(var(--secondary))] flex items-center justify-center text-xs font-medium text-[hsl(var(--secondary-foreground))] shrink-0 mt-0.5">
+                        {(c.username || 'U').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[hsl(var(--foreground))]">{c.username || 'Usuario'}</span>
+                          {c.createdAt && <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(c.createdAt).toLocaleString()}</span>}
+                        </div>
+                        <p className="text-sm text-[hsl(var(--foreground))]/80 mt-0.5">{c.commentText}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
+
+            {/* History */}
             <div>
-              <h4 className="text-sm font-medium text-slate-600 mb-2">Historial</h4>
+              <div className="flex items-center gap-2 mb-3">
+                <History className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                <h4 className="text-sm font-semibold text-[hsl(var(--foreground))]">Historial</h4>
+              </div>
               {loadingDetail ? (
-                <p className="text-slate-500 text-sm">Cargando...</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">Cargando...</p>
               ) : history.length === 0 ? (
-                <p className="text-slate-500 text-sm">No hay historial</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">No hay historial</p>
               ) : (
-                <ul className="space-y-2 text-sm">
-                  {history.map((e) => (
-                    <li key={e.id || e._id} className="border-l-2 border-slate-200 pl-2">
-                      <span className="font-medium">{e.action}</span>
-                      {e.timestamp && <span className="text-slate-400 text-xs ml-1">{new Date(e.timestamp).toLocaleString()}</span>}
-                      <p className="text-slate-600 text-xs mt-0.5">{e.username || 'Usuario'}: {e.oldValue || '(vacío)'} → {e.newValue || '(vacío)'}</p>
+                <ul className="space-y-3">
+                  {history.map((entry) => (
+                    <li key={entry.id || entry._id} className="relative pl-4 border-l-2 border-[hsl(var(--border))]">
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">{entry.action}</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                        {entry.username || 'Usuario'} - {entry.oldValue || '(vacio)'} {'-->'} {entry.newValue || '(vacio)'}
+                      </p>
+                      {entry.timestamp && (
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]/60 mt-0.5">{new Date(entry.timestamp).toLocaleString()}</p>
+                      )}
                     </li>
                   ))}
                 </ul>
               )}
             </div>
           </div>
-        </section>
+        </div>
       )}
 
-      {stats && (
-        <div className="bg-slate-100 rounded-lg px-4 py-3 text-sm">
-          <strong>Estadísticas:</strong> {stats.statsText}
+      {/* Add Task Modal */}
+      <TaskModal
+        open={modalMode === 'add'}
+        onClose={closeModal}
+        form={form}
+        setForm={setForm}
+        onSubmit={addTask}
+        projects={projects}
+        users={users}
+        title="Nueva tarea"
+        submitLabel="Crear tarea"
+        error={error}
+      />
+
+      {/* Edit Task Modal */}
+      <TaskModal
+        open={modalMode === 'edit'}
+        onClose={closeModal}
+        form={form}
+        setForm={setForm}
+        onSubmit={updateTask}
+        projects={projects}
+        users={users}
+        title="Editar tarea"
+        submitLabel="Guardar cambios"
+        error={error}
+      />
+
+      {error && !modalMode && (
+        <div className="card px-4 py-3 border-[hsl(var(--destructive))]/20 bg-[hsl(var(--destructive))]/5">
+          <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
         </div>
       )}
     </div>
