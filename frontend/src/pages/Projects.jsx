@@ -1,5 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
+import { Plus, Pencil, Trash2, X, FolderKanban } from 'lucide-react';
+
+function ProjectModal({ open, onClose, form, setForm, onSubmit, title, submitLabel, error }) {
+  const overlayRef = useRef(null);
+  if (!open) return null;
+  return (
+    <div ref={overlayRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}>
+      <div className="w-full max-w-md card overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[hsl(var(--border))]">
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">{title}</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-[hsl(var(--accent))] transition-colors">
+            <X className="w-5 h-5 text-[hsl(var(--muted-foreground))]" />
+          </button>
+        </div>
+        <form onSubmit={onSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Nombre *</label>
+            <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input-field" placeholder="Nombre del proyecto" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">Descripcion</label>
+            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="input-field resize-none" placeholder="Describe el proyecto..." />
+          </div>
+          {error && <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>}
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn-ghost">Cancelar</button>
+            <button type="submit" className="btn-primary">{submitLabel}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
@@ -7,6 +40,7 @@ export default function Projects() {
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', description: '' });
   const [selectedId, setSelectedId] = useState(null);
+  const [modalMode, setModalMode] = useState(null);
 
   const load = async () => {
     try {
@@ -22,16 +56,14 @@ export default function Projects() {
 
   useEffect(() => { load(); }, []);
 
-  const selectProject = (p) => {
-    const id = p.id || p._id;
-    setSelectedId(selectedId === id ? null : id);
+  const openAdd = () => { setForm({ name: '', description: '' }); setError(''); setModalMode('add'); };
+  const openEdit = (p) => {
+    setSelectedId(p.id || p._id);
     setForm({ name: p.name || '', description: p.description || '' });
+    setError('');
+    setModalMode('edit');
   };
-
-  const clearSelection = () => {
-    setSelectedId(null);
-    setForm({ name: '', description: '' });
-  };
+  const closeModal = () => { setModalMode(null); setError(''); };
 
   const addProject = async (e) => {
     e.preventDefault();
@@ -39,122 +71,97 @@ export default function Projects() {
     setError('');
     try {
       await api('/api/projects', { method: 'POST', body: { name: form.name.trim(), description: form.description || '' } });
-      setForm({ name: '', description: '' });
+      closeModal();
       load();
-    } catch (e) {
-      setError(e.message);
-    }
+    } catch (e) { setError(e.message); }
   };
 
   const updateProject = async (e) => {
     e.preventDefault();
-    if (!selectedId) { setError('Selecciona un proyecto de la lista'); return; }
-    if (!form.name.trim()) { setError('El nombre es requerido'); return; }
+    if (!selectedId || !form.name.trim()) { setError('El nombre es requerido'); return; }
     setError('');
     try {
       await api(`/api/projects/${selectedId}`, { method: 'PUT', body: { name: form.name.trim(), description: form.description || '' } });
-      clearSelection();
+      closeModal();
+      setSelectedId(null);
       load();
-    } catch (e) {
-      setError(e.message);
-    }
+    } catch (e) { setError(e.message); }
   };
 
-  const deleteProject = async () => {
-    if (!selectedId) return;
-    const p = projects.find((x) => (x.id || x._id) === selectedId);
-    if (!p || !confirm(`¿Eliminar proyecto: ${p.name}?`)) return;
+  const deleteProject = async (id) => {
+    const p = projects.find((x) => (x.id || x._id) === id);
+    if (!p || !confirm(`Eliminar proyecto: ${p.name}?`)) return;
     try {
-      await api(`/api/projects/${selectedId}`, { method: 'DELETE' });
-      clearSelection();
+      await api(`/api/projects/${id}`, { method: 'DELETE' });
+      if (selectedId === id) setSelectedId(null);
       load();
-    } catch (e) {
-      setError(e.message);
-    }
+    } catch (e) { setError(e.message); }
   };
 
-  if (loading) return <p className="text-slate-600">Cargando proyectos...</p>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-8 h-8 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">Gestión de Proyectos</h2>
-
-      <section className="bg-white rounded-xl shadow p-4 md:p-6">
-        <h3 className="font-medium text-slate-700 mb-4">Crear o editar proyecto</h3>
-        <form onSubmit={addProject} className="space-y-4 max-w-md">
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">Nombre *</label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-              placeholder={selectedId ? 'Selecciona un proyecto para editar' : ''}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-slate-600 mb-1">Descripción</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="submit" className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 text-sm">Crear proyecto</button>
-            <button type="button" onClick={updateProject} className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 text-sm">Renombrar / actualizar</button>
-            <button type="button" onClick={deleteProject} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 text-sm">Eliminar</button>
-            {selectedId && (
-              <button type="button" onClick={clearSelection} className="px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-100 text-sm">Cancelar</button>
-            )}
-          </div>
-        </form>
-        {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
-      </section>
-
-      <section className="bg-white rounded-xl shadow overflow-hidden">
-        <h3 className="font-medium text-slate-700 p-4">Lista de proyectos</h3>
-        {/* Desktop: table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="text-left p-2">ID</th>
-                <th className="text-left p-2">Nombre</th>
-                <th className="text-left p-2">Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr
-                  key={p.id || p._id}
-                  onClick={() => selectProject(p)}
-                  className={`border-t cursor-pointer hover:bg-slate-50 ${selectedId === (p.id || p._id) ? 'bg-slate-200' : ''}`}
-                >
-                  <td className="p-2">{p.id || p._id}</td>
-                  <td className="p-2">{p.name}</td>
-                  <td className="p-2">{p.description || ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">Proyectos</h2>
+          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Organiza tus tareas por proyecto</p>
         </div>
-        {/* Mobile: cards */}
-        <div className="md:hidden divide-y">
-          {projects.map((p) => (
-            <div
-              key={p.id || p._id}
-              onClick={() => selectProject(p)}
-              className={`p-4 cursor-pointer active:bg-slate-50 ${selectedId === (p.id || p._id) ? 'bg-slate-200' : ''}`}
-            >
-              <div className="font-medium">{p.name}</div>
-              <div className="text-sm text-slate-500 mt-0.5">{p.description || 'Sin descripción'}</div>
-              <div className="text-xs text-slate-400 mt-1">ID: {p.id || p._id}</div>
-            </div>
-          ))}
+        <button type="button" onClick={openAdd} className="btn-primary">
+          <Plus className="w-4 h-4" />
+          Nuevo proyecto
+        </button>
+      </div>
+
+      {error && !modalMode && (
+        <div className="card px-4 py-3 border-[hsl(var(--destructive))]/20 bg-[hsl(var(--destructive))]/5">
+          <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>
         </div>
-      </section>
+      )}
+
+      {/* Project grid */}
+      {projects.length === 0 ? (
+        <div className="card py-16 text-center">
+          <FolderKanban className="w-10 h-10 mx-auto text-[hsl(var(--muted-foreground))]/40 mb-3" />
+          <p className="text-[hsl(var(--muted-foreground))]">No hay proyectos. Crea uno para empezar.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects.map((p) => {
+            const id = p.id || p._id;
+            return (
+              <div key={id} className="card p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg bg-[hsl(var(--primary))]/10 flex items-center justify-center shrink-0">
+                      <FolderKanban className="w-5 h-5 text-[hsl(var(--primary))]" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-[hsl(var(--foreground))] truncate">{p.name}</h3>
+                      <p className="text-sm text-[hsl(var(--muted-foreground))] mt-0.5 line-clamp-2">{p.description || 'Sin descripcion'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button type="button" onClick={() => openEdit(p)} className="p-1.5 rounded-md hover:bg-[hsl(var(--accent))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--primary))] transition-colors" title="Editar">
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button type="button" onClick={() => deleteProject(id)} className="p-1.5 rounded-md hover:bg-red-50 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--destructive))] transition-colors" title="Eliminar">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <ProjectModal open={modalMode === 'add'} onClose={closeModal} form={form} setForm={setForm} onSubmit={addProject} title="Nuevo proyecto" submitLabel="Crear proyecto" error={error} />
+      <ProjectModal open={modalMode === 'edit'} onClose={closeModal} form={form} setForm={setForm} onSubmit={updateProject} title="Editar proyecto" submitLabel="Guardar cambios" error={error} />
     </div>
   );
 }

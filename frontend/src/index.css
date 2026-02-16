@@ -2,6 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-gray-100 text-gray-900 antialiased;
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+    --primary: 220 72% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 25%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 92%;
+    --accent-foreground: 220 20% 25%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --ring: 220 72% 50%;
+    --radius: 0.625rem;
+    --sidebar: 220 20% 14%;
+    --sidebar-foreground: 220 14% 92%;
+    --sidebar-accent: 220 20% 20%;
+    --success: 142 72% 40%;
+    --warning: 38 92% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-[hsl(var(--border))];
+  }
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-pendiente {
+    @apply bg-amber-100 text-amber-800;
+  }
+  .badge-progreso {
+    @apply bg-blue-100 text-blue-800;
+  }
+  .badge-completada {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+  .badge-bloqueada {
+    @apply bg-red-100 text-red-800;
+  }
+  .badge-cancelada {
+    @apply bg-gray-100 text-gray-800;
+  }
+  .badge-baja {
+    @apply bg-gray-100 text-gray-700;
+  }
+  .badge-media {
+    @apply bg-sky-100 text-sky-800;
+  }
+  .badge-alta {
+    @apply bg-orange-100 text-orange-800;
+  }
+  .badge-critica {
+    @apply bg-red-100 text-red-800;
+  }
+  .input-field {
+    @apply w-full px-3 py-2.5 bg-[hsl(var(--card))] border border-[hsl(var(--input))] rounded-[var(--radius)] text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:border-transparent transition-shadow;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-[var(--radius)] text-sm font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] rounded-[var(--radius)] text-sm font-medium hover:bg-[hsl(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--ring))] focus:ring-offset-2 transition-all;
+  }
+  .btn-destructive {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] rounded-[var(--radius)] text-sm font-medium hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--destructive))] focus:ring-offset-2 transition-all;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[hsl(var(--muted-foreground))] rounded-[var(--radius)] text-sm font-medium hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))] transition-all;
+  }
+  .card {
+    @apply bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))] rounded-xl border border-[hsl(var(--border))] shadow-sm;
+  }
 }

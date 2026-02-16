@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { History as HistoryIcon, RefreshCw, List } from 'lucide-react';
 
 export default function History() {
   const [taskId, setTaskId] = useState('');
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState('task'); // 'task' | 'all'
+  const [mode, setMode] = useState('task');
 
   const loadTaskHistory = async () => {
     if (!taskId.trim()) { setError('ID de tarea requerido'); return; }
@@ -41,45 +42,61 @@ export default function History() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">Historial de Cambios</h2>
+      <div>
+        <h2 className="text-2xl font-bold text-[hsl(var(--foreground))] tracking-tight">Historial</h2>
+        <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Registro de cambios en las tareas</p>
+      </div>
 
-      <section className="bg-white rounded-xl shadow p-4 md:p-6">
+      <div className="card p-5">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-sm text-slate-600 mb-1">ID Tarea</label>
-            <input
-              type="text"
-              value={taskId}
-              onChange={(e) => setTaskId(e.target.value)}
-              className="w-32 px-3 py-2 border rounded-lg"
-            />
+            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1.5">ID Tarea</label>
+            <input type="text" value={taskId} onChange={(e) => setTaskId(e.target.value)} className="input-field w-40" placeholder="ID" />
           </div>
-          <button type="button" onClick={loadTaskHistory} disabled={loading} className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600">Cargar Historial</button>
-          <button type="button" onClick={loadAllHistory} disabled={loading} className="px-4 py-2 border rounded-lg hover:bg-slate-100">Cargar Todo el Historial</button>
+          <button type="button" onClick={loadTaskHistory} disabled={loading} className="btn-primary">
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Cargar Historial
+          </button>
+          <button type="button" onClick={loadAllHistory} disabled={loading} className="btn-secondary">
+            <List className="w-4 h-4" />
+            Todo el Historial
+          </button>
         </div>
-        {error && <p className="mt-2 text-red-600 text-sm">{error}</p>}
-      </section>
+        {error && <p className="mt-3 text-sm text-[hsl(var(--destructive))]">{error}</p>}
+      </div>
 
-      <section className="bg-white rounded-xl shadow p-4">
-        <h3 className="font-medium text-slate-700 mb-2">{mode === 'all' ? 'Historial completo' : `Historial tarea #${taskId || '?'}`}</h3>
-        {loading ? (
-          <p className="text-slate-500">Cargando...</p>
-        ) : entries.length === 0 ? (
-          <p className="text-slate-500">No hay historial</p>
-        ) : (
-          <ul className="space-y-3 text-sm">
-            {entries.map((e) => (
-              <li key={e.id || e._id} className="border-b border-slate-100 pb-2">
-                <span className="text-slate-600">{e.timestamp ? new Date(e.timestamp).toLocaleString() : ''} - {e.action}</span>
-                <br />
-                <span className="text-slate-500">Usuario: {e.username || 'Desconocido'}</span>
-                <br />
-                Antes: {e.oldValue || '(vacío)'} → Después: {e.newValue || '(vacío)'}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+          <h3 className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-2">
+            <HistoryIcon className="w-4 h-4" />
+            {mode === 'all' ? 'Historial completo' : `Historial tarea #${taskId || '?'}`}
+          </h3>
+        </div>
+        <div className="p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-6 h-6 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : entries.length === 0 ? (
+            <p className="text-[hsl(var(--muted-foreground))] text-center py-8">No hay historial</p>
+          ) : (
+            <div className="space-y-4">
+              {entries.map((entry) => (
+                <div key={entry.id || entry._id} className="relative pl-5 border-l-2 border-[hsl(var(--border))]">
+                  <div className="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />
+                  <p className="text-sm font-medium text-[hsl(var(--foreground))]">{entry.action}</p>
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] mt-0.5">
+                    {entry.username || 'Desconocido'}: {entry.oldValue || '(vacio)'} {'-->'} {entry.newValue || '(vacio)'}
+                  </p>
+                  {entry.timestamp && (
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]/60 mt-1">{new Date(entry.timestamp).toLocaleString()}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
