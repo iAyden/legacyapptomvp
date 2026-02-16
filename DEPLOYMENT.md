@@ -136,6 +136,10 @@ Redeploy the backend after saving env vars so they are applied.
 
 ---
 
+## Note on password hashing
+
+The backend uses **bcryptjs** (pure JavaScript) instead of **bcrypt** (native bindings) so it deploys on Linux (e.g. Render) without native build issues. API is the same; existing password hashes remain valid.
+
 ## Troubleshooting
 
 - **CORS errors in browser:** Ensure `CORS_ORIGIN` on the backend exactly matches the frontend URL (scheme + host, no trailing slash).

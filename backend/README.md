@@ -72,7 +72,7 @@ node scripts/migrateFromLocalStorageDump.js /path/to/legacy-dump.json
 ### 3. What the script does
 
 - Connects to MongoDB using `MONGODB_URI`.
-- Inserts in order: **users** (passwords hashed with bcrypt) → **projects** → **tasks** → **comments** → **history** → **notifications**.
+- Inserts in order: **users** (passwords hashed with bcryptjs) → **projects** → **tasks** → **comments** → **history** → **notifications**.
 - Maps legacy numeric `id`s to MongoDB `_id`s and rewires references (e.g. task `projectId`, `assignedTo`, `createdBy`; comment `taskId`, `userId`).
 - Tasks without a valid `createdBy` in the dump use the first migrated user.
 - Comments/history/notifications that reference missing tasks or users are skipped.
